@@ -204,7 +204,26 @@ async def human_review(ctx: Context, node_input: types.Content | str):
     ctx.state["proposed_remediation"] = text
     
     # Check if this requires critical review
-    # In cybersecurity, we always perform human review for incident remediations
+    # In cybersecurity, we perform human review for incident remediations with MEDIUM, HIGH, or CRITICAL severity
+    lower_text = text.lower()
+    requires_review = False
+    if "threat level" in lower_text:
+        for level in ["medium", "high", "critical"]:
+            if level in lower_text:
+                requires_review = True
+                break
+
+    if not requires_review:
+        content_val = node_input if not isinstance(node_input, str) else types.Content(
+            role="model",
+            parts=[types.Part.from_text(text=text)]
+        )
+        yield Event(
+            output=text,
+            content=content_val
+        )
+        return
+
     if ctx.resume_inputs and "approve_action" in ctx.resume_inputs:
         user_choice = ctx.resume_inputs["approve_action"]
         
@@ -240,6 +259,7 @@ async def human_review(ctx: Context, node_input: types.Content | str):
         interrupt_id="approve_action",
         message=f"Orchestrator proposed remediation:\n{text}\n\nDo you approve these remediation steps? (Reply 'yes' or 'no')"
     )
+
 
 # 7. Execution Nodes
 def execute_remediation(ctx: Context, node_input: str) -> Event:
