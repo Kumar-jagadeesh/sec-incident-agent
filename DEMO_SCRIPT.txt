@@ -1,0 +1,52 @@
+[0:00 - HOOK]
+Every day, security operations centers are overwhelmed by thousands of alerts, leading to severe alert fatigue and delayed response times that attackers exploit. I built the Cybersecurity Incident Response Agent to automate the triaging, log analysis, threat intelligence gathering, and containment drafting process, helping security teams react to threats in seconds instead of hours.
+
+[0:20 - WHAT IT IS]
+This project is an intelligent, multi-agent security orchestrator built on the Google Agent Development Kit 2.0 and the Model Context Protocol. It fits into the Cybersecurity track, showcasing how AI can safely automate high-risk operational environments when paired with strict input validation and Human-in-the-Loop governance.
+
+[0:40 - SHOW THE BANNER]
+(show assets/cover_page_banner.png)
+As you can see on the screen, this is our project dashboard cover banner. It represents our core philosophy: automated, secure, and intelligent security orchestration. The agent sits between raw security data and active containment rules, ensuring data privacy and operational safety at every step.
+
+(pause)
+
+[1:00 - ARCHITECTURE]
+(show assets/architecture_diagram.png)
+Let's walk through the architecture to see how it works under the hood. 
+First, every user query starts at the START node and enters the Security Checkpoint node. This checkpoint acts as a secure gateway, automatically sanitizing HTML, redacting PII, and checking for prompt injection signatures.
+If a prompt injection is detected, it routes immediately to the Security Alert node, blocking execution and logging the attempt.
+If the input is clear, it routes to the orchestrator agent, our central coordinator.
+The orchestrator agent delegates specialized analysis tasks to the analyzer_agent, which uses our local Model Context Protocol server tools to query firewall logs, look up Indicator of Compromise reputation scores, and retrieve CVE details.
+The orchestrator then delegates the findings to the remediator_agent to compile containment recommendations and generate a structured markdown incident report.
+Finally, the flow moves to the human_review node. Here, the workflow graph pauses using the ADK RequestInput mechanism.
+Only when a human administrator explicitly approves the action does the graph transition to the execute_remediation node to block the threat. If denied, it transitions to the cancel_remediation node.
+
+(pause)
+
+[2:00 - LIVE DEMO]
+(switch to playground at localhost:18081)
+Now, let's see the agent in action. I am going to demonstrate the three core test cases in our local playground UI.
+
+First, let's run Case 1, which is a low-severity lookup.
+(show inputting: Can you check if there is any threat reputation for the IP address 8.8.8.8?)
+When we send this, the Security Checkpoint approves the input. The orchestrator invokes the analyzer_agent, which calls the lookup_ioc tool on our MCP server. Since 8.8.8.8 has a threat score of zero and is categorized as Safe DNS, the orchestrator immediately returns a clean status without requesting human approval.
+
+Next, let's run Case 2, which demonstrates data privacy and threat triage.
+(show inputting: We received an alert regarding CVE-2021-44228. Can you search details for this vulnerability and give mitigation recommendations? Please send updates to ciso@company.com.)
+When I submit this, look closely at the console logs. The Security Checkpoint immediately redacts the email ciso@company.com to [REDACTED_EMAIL] before sending it to the model. The orchestrator then identifies CVE-2021-44228 as Log4Shell, pulls its CVSS score of ten point zero, and returns detailed mitigation recommendations. Because this is a critical vulnerability, the workflow pauses and requests confirmation.
+
+Finally, let's run Case 3, demonstrating automated logs triage and containment execution.
+(show inputting: Alert: We see suspicious activity. Search the security logs for failed login attempts, analyze the source IP 203.0.113.15, and generate the response.)
+When I send this request, the analyzer_agent queries our mock security logs, flags multiple SSH failed logins from the IP 203.0.113.15, and maps it to the MITRE ATT&CK brute force technique. The remediator_agent structures a markdown report and proposes blocking the IP at the firewall. At this point, the workflow pauses. 
+On the screen, you see the confirmation prompt: "Do you approve these remediation steps? (Reply 'yes' or 'no')".
+I will type 'yes'. 
+The workflow immediately resumes, executes the block rule, and logs a successful audit event.
+
+(pause)
+
+[3:00 - SECURITY & MCP]
+(show assets/architecture_diagram.png)
+What makes this system exceptionally secure is our two-layer defense. First, the Security Checkpoint programmatically scrubs emails, bearer tokens, and credentials, meaning sensitive data never leaves our network boundary or enters the model's training context. Second, our custom Model Context Protocol server keeps all tool executions decoupled from the core LLM orchestration.
+
+[3:30 - IMPACT / CLOSE]
+By automating the tedious work of triaging logs and checking threat intelligence, this agent reduces incident response times from hours to seconds. Most importantly, our Human-in-the-Loop gating ensures that no critical server is ever accidentally locked out by an AI hallucination. This agent provides a safe, highly auditable blueprint for modern security operations. Thank you.
